@@ -1,0 +1,8 @@
+---
+# defaults file for shiny-octo-garbanzo/
+downloads: /vagrant/downloads
+user: ubuntu
+restart: false
+pia_username: "{{ lookup('env','PIA_USERNAME') }}"
+pia_password: "{{ lookup('env','PIA_PASSWORD') }}"
+external_ip: "{{ ansible_enp0s8.ipv4.address }}"

@@ -1,0 +1,20 @@
+---
+# vi: ft=ansible
+
+  - name: check transmission webpage
+    uri:
+      url: http://{{ external_ip }}:9091/transmission/web/
+      return_content: true
+    register: transmission
+    failed_when: "'Transmission Tip Jar' not in transmission.content"
+
+  - name: check sonarr webpage
+    uri:
+      url: http://{{ external_ip }}:8989/
+      return_content: true
+      register: sonarr
+      failed_when: '"iCalendar feed for Sonarr" in sonarr.content'
+
+  - name: test squid
+    wait_for:
+      port: 3128

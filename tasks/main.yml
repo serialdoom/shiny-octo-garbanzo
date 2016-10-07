@@ -1,0 +1,93 @@
+---
+# vi: ft=ansible
+# tasks file for shiny-octo-garbanzo/
+  - name: apt-get transmission
+    apt:
+      name: '{{ item }}'
+      state: present
+      cache_valid_time: 36000
+      update_cache: yes
+    with_items:
+      - transmission-daemon
+      - python-pip
+      - docker.io
+    tags:
+      - apt
+
+  - include: transmission.yml
+    tags:
+      - trans
+
+  - name: install pip packages
+    pip:
+      name: '{{ item }}'
+      state: present
+    with_items:
+      - pip
+      - docker-py==1.9.0
+    tags:
+      - pip
+
+  - name: check vagrant user
+    user:
+      name: '{{ user }}'
+    register: vagrant
+    tags:
+      - sonarr
+
+  - name: create directories
+    file:
+      path: '{{ item }}'
+      state: directory
+      owner: '{{ user }}'
+      group: '{{ user }}'
+    with_items:
+      - '{{ downloads }}/sonarr'
+      - '/home/ubuntu/sonarr'
+    tags:
+      - mkdir
+
+  - name: create sonarr container
+    docker_container:
+      name: sonarr
+      restart: '{{ restart }}'
+      image: linuxserver/sonarr
+      env:
+        PGID: '{{ vagrant.group }}'
+        PUID: '{{ vagrant.uid }}'
+      ports:
+        - '8989:8989'
+      volumes:
+        - '/dev/rtc:/dev/rtc:ro'
+        - '{{ downloads }}:/downloads'
+        - '/home/ubuntu/sonarr:/config'
+    tags:
+      - sonarr
+
+  - name: save backups in vagrant disk
+    cron:
+      minute: 0
+      hour: '*'
+      job: 'rsync -avl /home/ubuntu/sonarr/Backups/ /vagrant/sonarr/backups'
+    tags:
+      - cron
+
+  - include: pia.yml
+    tags:
+      - pia
+
+  - name: start squid container
+    docker_container:
+      name: squid
+      image: sameersbn/squid:3.3.8-19
+      ports:
+         - '3128:3128'
+      restart_policy: always
+      restart: '{{ restart }}'
+    tags:
+      - squid
+
+  - name: Post installation tests
+    include: tests.yml
+    tags:
+      - test

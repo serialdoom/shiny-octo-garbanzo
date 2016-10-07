@@ -1,0 +1,9 @@
+[Unit]
+Description=Private Internet Access vpn connection
+
+[Service]
+WorkingDirectory=/etc/openvpn
+ExecStart=/bin/bash -c "openvpn France.ovpn"
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,28 @@
+---
+# vi: ft=ansible
+
+  - name: check the webpage
+    uri:
+      url: http://{{ external_ip }}:9091/transmission/web/
+      return_content: true
+    register: transmission
+    ignore_errors: true
+    failed_when: "'Transmission Tip Jar' not in transmission.content"
+
+  - block:
+    - name: stop transmission-daemon
+      service:
+        name: transmission-daemon
+        state: stopped
+
+    - name: deploy transmission config
+      template:
+        src: settings.json
+        dest: /var/lib/transmission-daemon/info/settings.json
+
+    - name: start transmission-daemon
+      service:
+        name: transmission-daemon
+        state: started
+    when: transmission|failed
+

@@ -1,0 +1,53 @@
+---
+# vi: ft=ansible
+  - name: apt-get stuff
+    apt:
+      name: '{{ item }}'
+      state: present
+      cache_valid_time: 36000
+      update_cache: yes
+    with_items:
+      - openvpn
+      - unzip
+    tags:
+      - apt
+
+  - name: wget profiles
+    get_url:
+      url: "https://www.privateinternetaccess.com/openvpn/openvpn.zip"
+      dest: /usr/local/src/
+
+  - name: extract profiles
+    unarchive:
+      src: /usr/local/src/openvpn.zip
+      dest: /etc/openvpn
+      copy: false
+      creates: /etc/openvpn/France.ovpn
+
+  - name: create auth file
+    template:
+      src: pia.creds
+      dest: /etc/openvpn/auth.txt
+      mode: 0700
+
+  - name: get a list of profiles
+    shell: find /etc/openvpn/ -name '*ovpn'
+    register: profiles
+
+  - name: add cred file to profiles
+    lineinfile:
+      line: 'auth-user-pass auth.txt'
+      dest: '{{ item }}'
+    with_items:
+      - '{{ profiles.stdout_lines }}'
+
+  - name: deploy pia systemd file
+    template:
+      src: pia-systemd
+      dest: /lib/systemd/system/pia.service
+
+  - name: start and enable pia
+    service:
+      name: pia
+      state: started
+      enabled: true
