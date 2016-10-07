@@ -3,7 +3,7 @@ Description=Private Internet Access vpn connection
 
 [Service]
 WorkingDirectory=/etc/openvpn
-ExecStart=/bin/bash -c "openvpn France.ovpn"
+ExecStart=/bin/bash -c "openvpn Italy.ovpn"
 
 [Install]
 WantedBy=multi-user.target
