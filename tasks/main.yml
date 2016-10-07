@@ -1,6 +1,10 @@
 ---
 # vi: ft=ansible
 # tasks file for shiny-octo-garbanzo/
+  - debug: var=external_ip
+    tags:
+      - ip
+
   - name: apt-get transmission
     apt:
       name: '{{ item }}'
@@ -50,6 +54,7 @@
   - name: create sonarr container
     docker_container:
       name: sonarr
+      restart_policy: always
       restart: '{{ restart }}'
       image: linuxserver/sonarr
       env:
