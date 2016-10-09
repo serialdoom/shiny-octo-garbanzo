@@ -5,39 +5,36 @@
     tags:
       - ip
 
-  - name: apt-get transmission
-    apt:
-      name: '{{ item }}'
-      state: present
-      cache_valid_time: 36000
-      update_cache: yes
-    with_items:
-      - transmission-daemon
-      - python-pip
-      - docker.io
-    tags:
-      - apt
-
-  - include: transmission.yml
-    tags:
-      - trans
-
-  - name: install pip packages
-    pip:
-      name: '{{ item }}'
-      state: present
-    with_items:
-      - pip
-      - docker-py==1.9.0
-    tags:
-      - pip
-
   - name: check vagrant user
     user:
       name: '{{ user }}'
     register: vagrant
     tags:
       - sonarr
+      - trans
+
+  - name: apt-get docker stuff
+    apt:
+      name: '{{ item }}'
+      state: present
+      cache_valid_time: 36000
+      update_cache: yes
+    with_items:
+      - python-pip
+      - unzip
+    tags:
+      - apt
+
+  - name: install pip stuff
+    pip:
+      name: '{{ item }}'
+      state: present
+    with_items:
+      - docker-py==1.9.0
+
+  - include: transmission.yml
+    tags:
+      - trans
 
   - name: create directories
     file:
@@ -47,9 +44,37 @@
       group: '{{ user }}'
     with_items:
       - '{{ downloads }}/sonarr'
-      - '/home/ubuntu/sonarr'
+      - '/home/{{ user }}/sonarr'
+      - '{{ downloads }}/backups'
     tags:
       - mkdir
+
+  - block:
+    - name: find out backups to restore
+      shell: find downloads/sonarr/backups/manual -type f -name '*zip' | sort | tail -1
+      register: backups
+
+    - debug: var=backups
+    - name: validate backup file presence
+      stat:
+        path: '{{ backups.stdout }}'
+      register: backup
+
+    - debug: var=backup.stat.path
+    delegate_to: localhost
+    become: false
+    tags:
+      - restore
+
+  - name: extract backup to the config location
+    unarchive:
+      src: '{{ backups.stdout }}'
+      dest: '/home/{{ user }}/sonarr'
+      owner: '{{ user }}'
+      group: '{{ user }}'
+    when: backup.stat.exists
+    tags:
+      - restore
 
   - name: create sonarr container
     docker_container:
@@ -57,6 +82,8 @@
       restart_policy: always
       restart: '{{ restart }}'
       image: linuxserver/sonarr
+      links:
+        - transmission
       env:
         PGID: '{{ vagrant.group }}'
         PUID: '{{ vagrant.uid }}'
@@ -65,32 +92,24 @@
       volumes:
         - '/dev/rtc:/dev/rtc:ro'
         - '{{ downloads }}:/downloads'
-        - '/home/ubuntu/sonarr:/config'
+        - '/home/{{ user }}/sonarr:/config'
     tags:
       - sonarr
 
-  - name: save backups in vagrant disk
-    cron:
-      minute: 0
-      hour: '*'
-      job: 'rsync -avl /home/ubuntu/sonarr/Backups/ /vagrant/sonarr/backups'
-    tags:
-      - cron
+  # - name: save backups in vagrant disk
+    # cron:
+      # minute: '*'
+      # hour: '*'
+      # job: 'rsync -avl /home/{{ user }}/sonarr/Backups/ {{ downloads }}/sonarr/backups | tee -a /tmp/backups.log'
+    # tags:
+      # - cron
 
   - include: pia.yml
     tags:
       - pia
 
-  - name: start squid container
-    docker_container:
-      name: squid
-      image: sameersbn/squid:3.3.8-19
-      ports:
-         - '3128:3128'
-      restart_policy: always
-      restart: '{{ restart }}'
-    tags:
-      - squid
+  - include: squid.yml
+    when: squid
 
   - name: Post installation tests
     include: tests.yml

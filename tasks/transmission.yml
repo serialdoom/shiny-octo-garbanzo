@@ -1,28 +1,31 @@
 ---
 # vi: ft=ansible
 
-  - name: check the webpage
-    uri:
-      url: http://{{ external_ip }}:9091/transmission/web/
-      return_content: true
-    register: transmission
-    ignore_errors: true
-    failed_when: "'Transmission Tip Jar' not in transmission.content"
+  - name: create transmissiondirectories
+    file:
+      path: '{{ item }}'
+      state: directory
+    with_items:
+      - /etc/transmission/
+  - name: deploy transmission config
+    template:
+      src: settings.json
+      dest: /etc/transmission/settings.json
 
-  - block:
-    - name: stop transmission-daemon
-      service:
-        name: transmission-daemon
-        state: stopped
-
-    - name: deploy transmission config
-      template:
-        src: settings.json
-        dest: /var/lib/transmission-daemon/info/settings.json
-
-    - name: start transmission-daemon
-      service:
-        name: transmission-daemon
-        state: started
-    when: transmission|failed
-
+  - name: create docker container
+    docker_container:
+      name: transmission
+      restart_policy: always
+      restart: '{{ restart }}'
+      image: linuxserver/transmission
+      volumes:
+        - '/etc/transmission:/config'
+        - '/vagrant/downloads:/downloads'
+      env:
+        PGID: '{{ vagrant.group }}'
+        PUID: '{{ vagrant.uid }}'
+        TZ: Europe/London
+      ports:
+        - '9091:9091'
+        - '51413:51413'
+        - '51413:51413/udp'
