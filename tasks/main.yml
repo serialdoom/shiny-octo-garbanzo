@@ -43,9 +43,7 @@
       owner: '{{ user }}'
       group: '{{ user }}'
     with_items:
-      - '{{ downloads }}/sonarr'
       - '/home/{{ user }}/sonarr'
-      - '{{ downloads }}/backups'
     tags:
       - mkdir
 
@@ -54,7 +52,6 @@
       shell: find downloads/sonarr/backups/manual -type f -name '*zip' | sort | tail -1
       register: backups
 
-    - debug: var=backups
     - name: validate backup file presence
       stat:
         path: '{{ backups.stdout }}'
@@ -95,14 +92,6 @@
         - '/home/{{ user }}/sonarr:/config'
     tags:
       - sonarr
-
-  # - name: save backups in vagrant disk
-    # cron:
-      # minute: '*'
-      # hour: '*'
-      # job: 'rsync -avl /home/{{ user }}/sonarr/Backups/ {{ downloads }}/sonarr/backups | tee -a /tmp/backups.log'
-    # tags:
-      # - cron
 
   - include: pia.yml
     tags:

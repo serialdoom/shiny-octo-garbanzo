@@ -1,6 +1,6 @@
 ---
 # defaults file for shiny-octo-garbanzo/
-downloads: /vagrant/downloads
+downloads: /downloads
 user: vagrant
 restart: false
 pia_username: "{{ lookup('env','PIA_USERNAME') }}"

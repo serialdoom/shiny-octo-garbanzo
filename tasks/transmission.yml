@@ -20,7 +20,7 @@
       image: linuxserver/transmission
       volumes:
         - '/etc/transmission:/config'
-        - '/vagrant/downloads:/downloads'
+        - '/downloads:/downloads'
       env:
         PGID: '{{ vagrant.group }}'
         PUID: '{{ vagrant.uid }}'
