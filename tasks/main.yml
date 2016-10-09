@@ -49,7 +49,7 @@
 
   - block:
     - name: find out backups to restore
-      shell: find downloads/sonarr/backups/manual -type f -name '*zip' | sort | tail -1
+      shell: find sonarr/backups/manual -type f -name '*zip' | sort | tail -1
       register: backups
 
     - name: validate backup file presence
