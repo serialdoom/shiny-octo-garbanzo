@@ -1,0 +1,13 @@
+---
+
+   - name: start squid container
+     docker_container:
+       name: squid
+       image: sameersbn/squid:3.3.8-19
+       ports:
+          - '3128:3128'
+       restart_policy: always
+       restart: '{{ restart }}'
+     tags:
+       - squid
+

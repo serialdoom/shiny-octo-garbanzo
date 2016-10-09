@@ -1,0 +1,7 @@
+description "PrivateInternetAccess daemon"
+
+
+respawn
+
+chdir /etc/openvpn
+exec openvpn "{{ pia_profile }}"
