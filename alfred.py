@@ -41,7 +41,7 @@ def main():
             call(["vagrant", "up"])
             power_log = vagrant('up')
         elif args.cmd.startswith(cmd['off']):
-            power_log = vagrant('halt')
+            power_log = vagrant('suspend')
         with open('/tmp/vagrant-power.log', 'w') as stream:
             stream.write(str(power_log))
         return
